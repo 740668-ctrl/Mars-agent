@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relay // Agent Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15130f;
+    --panel: #1d1a14;
+    --rust: #c8602f;
+    --dust: #d9b88a;
+    --signal: #8fae8a;
+    --line: #3a352b;
+    --text: #ece6d8;
+    --muted: #8b8470;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--rust);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  textarea {
+    width: 100%;
+    background: #0f0e0a;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 14px;
+    min-height: 90px;
+    resize: vertical;
+  }
+
+  textarea:focus, button:focus-visible {
+    outline: 2px solid var(--rust);
+    outline-offset: 1px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+  }
+
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  button {
+    background: var(--rust);
+    color: #15130f;
+    border: none;
+    border-radius: 3px;
+    padding: 11px 22px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  button:hover { opacity: 0.88; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .transmission {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--panel);
+    padding: 0;
+    overflow: hidden;
+    display: none;
+  }
+
+  .transmission.active { display: block; }
+
+  .t-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 6px var(--signal);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .t-body {
+    padding: 18px 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--text);
+  }
+
+  .error .dot { background: var(--rust); box-shadow: 0 0 6px var(--rust); }
+  .error .t-head { color: var(--rust); }
+
+  footer {
+    margin-top: 40px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Relay · Agent Console</div>
+      <h1>Send a task. Get a transmission back.</h1>
+      <p class="sub">This console runs a single agent backed by the OpenAI API. Type a task, send it, and the response streams in below as a received transmission.</p>
+    </header>
+
+    <div class="panel">
+      <label for="prompt">Task</label>
+      <textarea id="prompt" placeholder="Write a movie script about a robot on Mars"></textarea>
+      <div class="row">
+        <span class="hint" id="hint">Runs on the server's OpenAI key</span>
+        <button id="send">Send task</button>
+      </div>
+    </div>
+
+    <div class="transmission" id="transmission">
+      <div class="t-head">
+        <span class="dot"></span>
+        <span id="t-label">Receiving transmission…</span>
+      </div>
+      <div class="t-body" id="t-body"></div>
+    </div>
+
+    <footer>Local console — no data leaves your own server.</footer>
+  </div>
+
+  <script>
+    const sendBtn = document.getElementById('send');
+    const promptEl = document.getElementById('prompt');
+    const transmission = document.getElementById('transmission');
+    const tBody = document.getElementById('t-body');
+    const tLabel = document.getElementById('t-label');
+
+    async function runAgent() {
+      const prompt = promptEl.value.trim();
+      if (!prompt) {
+        promptEl.focus();
+        return;
+      }
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending…';
+      transmission.classList.remove('error');
+      transmission.classList.add('active');
+      tLabel.textContent = 'Receiving transmission…';
+      tBody.textContent = '';
+
+      try {
+        const res = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          transmission.classList.add('error');
+          tLabel.textContent = 'Transmission failed';
+          tBody.textContent = data.error || 'Something went wrong.';
+        } else {
+          tLabel.textContent = 'Transmission received';
+          tBody.textContent = data.output;
+        }
+      } catch (err) {
+        transmission.classList.add('error');
+        tLabel.textContent = 'Transmission failed';
+        tBody.textContent = 'Could not reach the server. Is it running?';
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send task';
+      }
+    }
+
+    sendBtn.addEventListener('click', runAgent);
+    promptEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) runAgent();
+    });
+  </script>
+</body>
+</html>
